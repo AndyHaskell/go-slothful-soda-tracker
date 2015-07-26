@@ -36,18 +36,24 @@ func initTestServer() (*httptest.Server, *MapBroadcaster) {
 	return svr, m
 }
 
-//Test that a conection is started when connecting to ws
-func TestConn(t *testing.T) {
-	svr := initServerWithEmptyBroadcaster()
-	defer svr.Close()
-
+func makeWebSocketConn(t *testing.T, svr *httptest.Server) *ws.Conn {
 	wsURL := getWebSocketURL(svr)
 	conn, res, err := dialer.Dial(wsURL, nil)
 	if err != nil {
 		t.Errorf("%v", res.Status)
 		t.Fatalf("Dial failed, %v", err)
 	}
-	defer conn.Close()
+
+	return conn
+}
+
+//Test that a conection is started when connecting to ws
+func TestConn(t *testing.T) {
+	svr := initServerWithEmptyBroadcaster()
+	defer svr.Close()
+
+	conn := makeWebSocketConn(t, svr)
+	conn.Close()
 }
 
 //Verify that two connections can be added to the broadcaster
@@ -55,14 +61,8 @@ func TestTwoConns(t *testing.T) {
 	svr, broadcaster := initTestServer()
 	defer svr.Close()
 
-	wsURL := getWebSocketURL(svr)
-
 	//Make the first connection
-	conn1, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn1 := makeWebSocketConn(t, svr)
 	defer conn1.Close()
 
 	//Make sure first connection was added to broadcaster
@@ -72,11 +72,7 @@ func TestTwoConns(t *testing.T) {
 	}
 
 	//Make the second connection
-	conn2, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
 	//Make sure second connection was added to broadcaster
@@ -92,22 +88,18 @@ func TestGetIdMessage(t *testing.T) {
 	svr, _ := initTestServer()
 	defer svr.Close()
 
-	wsURL := getWebSocketURL(svr)
+	yourIdJSON := `{"msgType":"Your ID","data":"1"}`
 
 	//Make a connection
-	conn, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn := makeWebSocketConn(t, svr)
 	defer conn.Close()
 
 	_, msg, err := conn.ReadMessage()
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
-	if string(msg) != `{"msgType":"Your ID","data":"1"}` {
-		t.Fatalf("msg: Expected %s, got %s", `{"msgType":"Your ID","data":"1"}`, msg)
+	if string(msg) != yourIdJSON {
+		t.Fatalf("msg: Expected %s, got %s", yourIdJSON, msg)
 	}
 }
 
@@ -121,23 +113,13 @@ func TestGetEveryoneMessage(t *testing.T) {
 	svr, _ := initTestServer()
 	defer svr.Close()
 
-	wsURL := getWebSocketURL(svr)
-
 	//Make two connections
-	conn1, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn1 := makeWebSocketConn(t, svr)
 	defer conn1.Close()
-	conn2, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
-	_, _, err = conn2.ReadMessage()
+	_, _, err := conn2.ReadMessage()
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
@@ -157,23 +139,12 @@ func TestDisconnect(t *testing.T) {
 	svr, broadcaster := initTestServer()
 	defer svr.Close()
 
-	wsURL := getWebSocketURL(svr)
-
-	//Make two connections
-	conn1, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn1 := makeWebSocketConn(t, svr)
 	defer conn1.Close()
-	conn2, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn2 := makeWebSocketConn(t, svr)
 	conn2.Close()
 
-	//Make sure second connection was added to broadcaster
+	//Make sure second connection was removed from broadcaster
 	time.Sleep(100)
 	if len(broadcaster.Users) != 1 {
 		t.Errorf("len(broadcaster.Users): Expected %d, got %d",
@@ -187,14 +158,8 @@ func TestUserJoinedMessage(t *testing.T) {
 	svr, _ := initTestServer()
 	defer svr.Close()
 
-	wsURL := getWebSocketURL(svr)
-
 	//Make the first connection
-	conn1, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn1 := makeWebSocketConn(t, svr)
 	defer conn1.Close()
 
 	//Have the first connection read its ID and everyone messages
@@ -208,11 +173,7 @@ func TestUserJoinedMessage(t *testing.T) {
 	}
 
 	//Make the second connection
-	conn2, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
 	//Have the second connection read its ID and everyone messages
@@ -250,14 +211,8 @@ func TestDisconnectBroadcast(t *testing.T) {
 	svr, _ := initTestServer()
 	defer svr.Close()
 
-	wsURL := getWebSocketURL(svr)
-
 	//Make two connections
-	conn1, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn1 := makeWebSocketConn(t, svr)
 	defer conn1.Close()
 
 	//Have the first connection read its ID and everyone messages
@@ -271,11 +226,7 @@ func TestDisconnectBroadcast(t *testing.T) {
 		t.Fatalf("Read message failed, %v", err)
 	}
 
-	conn2, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn2 := makeWebSocketConn(t, svr)
 
 	//Have the second connection read its ID and everyone messages
 	_, msg, err = conn2.ReadMessage()
@@ -311,14 +262,8 @@ func TestBroadcastCoords(t *testing.T){
 	svr, _ := initTestServer()
 	defer svr.Close()
 
-	wsURL := getWebSocketURL(svr)
-
 	//Make two connections
-	conn1, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn1 := makeWebSocketConn(t, svr)
 	defer conn1.Close()
 	
 	//Have the first connection read its ID and everyone messages
@@ -332,11 +277,7 @@ func TestBroadcastCoords(t *testing.T){
 		t.Fatalf("Read message failed, %v", err)
 	}
 
-	conn2, res, err := dialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Errorf("%v", res.Status)
-		t.Fatalf("Dial failed, %v", err)
-	}
+	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
 	//Have the second connection read its ID and everyone messages
