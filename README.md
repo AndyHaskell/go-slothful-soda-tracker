@@ -4,7 +4,7 @@ Slothful Soda Tracker (Go)
 ###A slothy take on pizza delivery trackers
 ![Slothful Soda Tracker demo GIF](https://github.com/AndyHaskell/slothful-soda-tracker/blob/master/public/images/slothful-soda-tracker-demo.gif?raw=true)
 ###How to install:
-* Clone the project into the `src` directory of your `GOPATH` and Run `go install`
+* Clone the project into the `src` directory of your `GOPATH` and run `go install`
 * In `views/index.html` add your Google Maps API key where it says `YOUR_GOOGLE_MAPS_API_KEY` in the `<script>` tag for getting the Google Maps API
 * Then to start the server, run `go-slothful-soda-tracker` and go to `localhost:1123`
 
