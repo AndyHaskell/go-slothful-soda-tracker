@@ -1,7 +1,4 @@
-# go-slothful-soda-tracker
-A Go implementation of my socket.io Slothful Soda delivery tracker
-@@ -0,0 +1,35 @@
-﻿Slothful Soda Tracker (Go)
+Slothful Soda Tracker (Go)
 ==========================
 
 ###A slothy take on pizza delivery trackers
