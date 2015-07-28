@@ -116,6 +116,8 @@ func (user *User) updateCoords(lat, lng float64) {
 	user.Lng = lng
 }
 
+//getCoords creates a LatLngMsg struct containing a User's ID number and
+//latitude and longitude coordinates.
 func (user *User) getCoords() LatLngMsg {
 	return LatLngMsg{
 		Id:  user.IdNumber,
@@ -187,6 +189,9 @@ func (m *MapBroadcaster) BroadcastToEveryoneBut(id string, msg []byte) {
 	}
 }
 
+//ManageUsers runs a goroutine that has a MapBroadcaster handle users
+//connecting, disconnecting, and sending messages about their coordinates over
+//the MapBroadcaster.
 func (m *MapBroadcaster) ManageUsers() {
 	go func() {
 		for {
