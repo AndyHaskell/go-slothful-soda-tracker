@@ -26,16 +26,26 @@ func getWebSocketURL(svr *httptest.Server) string {
 	return "ws" + urlNoProtocol + "/ws"
 }
 
+//initServerWithEmptyBroadcaster initializes an httptest server with the routes
+//defined in initMux and an EmptyBroadcaster as the server's Broadcaster and
+//returns the server.
 func initServerWithEmptyBroadcaster() *httptest.Server{
 	return httptest.NewServer(initMux(&EmptyBroadcaster{}))
 }
 
+//initTestServer initializes a MapBroadcaster and an httptest server that uses
+//that MapBroadcaster and the routes defined in initMux and returns the server
+//and the MapBroadcaster.
 func initTestServer() (*httptest.Server, *MapBroadcaster) {
 	m := initMapBroadcaster()
 	svr := httptest.NewServer(initMux(m))
 	return svr, m
 }
 
+//makeWebSocketConn takes in a testing.T and an httptest Server and returns a
+//WebSocket connection to the server. If the connection fails, the test stops,
+//sending an error for the response's HTTP status (supposed to be 101) and
+//the text of the connection error.
 func makeWebSocketConn(t *testing.T, svr *httptest.Server) *ws.Conn {
 	wsURL := getWebSocketURL(svr)
 	conn, res, err := dialer.Dial(wsURL, nil)
@@ -131,7 +141,6 @@ func TestGetEveryoneMessage(t *testing.T) {
 		t.Fatalf("everyone: Expected %s, got %s", twoUsersJSON,  everyone)
 	}
 }
-
 
 //Makes sure when a user disconnects they are removed from the broadcaster's
 //Users map.
@@ -258,6 +267,9 @@ func TestDisconnectBroadcast(t *testing.T) {
 	}
 }
 
+//Makes sure when a user sends a JSON message containing their ID number and
+//coordinates that it is broadcasted to every user connected to the broadcaster
+//except the user that sent the message.
 func TestBroadcastCoords(t *testing.T){
 	svr, _ := initTestServer()
 	defer svr.Close()
