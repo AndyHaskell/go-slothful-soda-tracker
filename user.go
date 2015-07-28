@@ -33,9 +33,9 @@ func initUser(id string, conn *ws.Conn, m *MapBroadcaster) *User {
 	return user
 }
 
-//msgFromBroadcaster adds a message from a Broadcaster to the User's receiveMsgs
+//MsgFromBroadcaster adds a message from a Broadcaster to the User's receiveMsgs
 //channel.
-func (user *User) msgFromBroadcaster(msg []byte) {
+func (user *User) MsgFromBroadcaster(msg []byte) {
 	user.receiveMsgs <- msg
 }
 

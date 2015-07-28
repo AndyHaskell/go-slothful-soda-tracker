@@ -85,7 +85,7 @@ func (m *MapBroadcaster) MsgFromConn(msg []byte) {
 //user in the MapBroadcaster's Users map.
 func (m *MapBroadcaster) broadcast(msg []byte) {
 	for _, user := range m.Users {
-		user.msgFromBroadcaster(msg)
+		user.MsgFromBroadcaster(msg)
 	}
 }
 
@@ -95,7 +95,7 @@ func (m *MapBroadcaster) broadcast(msg []byte) {
 func (m *MapBroadcaster) broadcastToEveryoneBut(id string, msg []byte) {
 	for currentId, user := range m.Users {
 		if currentId != id {
-			user.msgFromBroadcaster(msg)
+			user.MsgFromBroadcaster(msg)
 		}
 	}
 }
@@ -132,12 +132,12 @@ func (m *MapBroadcaster) ManageUsers() {
 				everyoneMsg, _ := MakeMsg("Everyone", m)
 				joinMsg, _ := MakeMsg("User joined", idString)
 
-				user.msgFromBroadcaster(yourIdMsg)
-				user.msgFromBroadcaster(everyoneMsg)
+				user.MsgFromBroadcaster(yourIdMsg)
+				user.MsgFromBroadcaster(everyoneMsg)
 				m.broadcastToEveryoneBut(idString, joinMsg)
 			case id := <-m.disconnect:
 				if _, ok := m.Users[id]; ok {
-					m.Users[id].msgFromBroadcaster([]byte("close"))
+					m.Users[id].MsgFromBroadcaster([]byte("close"))
 					disconnectMsg, _ := MakeMsg("User disconnected", id)
 					m.broadcastToEveryoneBut(id, disconnectMsg)
 					delete(m.Users, id)
