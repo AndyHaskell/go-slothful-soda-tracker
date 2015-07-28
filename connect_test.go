@@ -81,6 +81,9 @@ func readMessagesAndKeepTheLastOne(conn *ws.Conn, howMany int) ([]byte, error) {
 	var msg []byte
 	var err error
 	for i := 0; i < howMany; i++ {
+		//Make sure the connection doesn't block if there's no message to read.
+		conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+
 		_, msg, err = conn.ReadMessage()
 		if err != nil {
 			return nil, err
