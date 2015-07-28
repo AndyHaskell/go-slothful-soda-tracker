@@ -74,6 +74,21 @@ func makeWebSocketConn(t *testing.T, svr *httptest.Server) *ws.Conn {
 	return conn
 }
 
+//readMessagesAndKeepTheLastOne takes in a Gorilla websocket connection and how
+//many messages to read and reads in that number of messages, returning the last
+//message read if no error was encountered or an error if one was encountered.
+func readMessagesAndKeepTheLastOne(conn *ws.Conn, howMany int) ([]byte, error) {
+	var msg []byte
+	var err error
+	for i := 0; i < howMany; i++ {
+		_, msg, err = conn.ReadMessage()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return msg, nil
+}
+
 //Test that a conection is started when connecting to ws
 func TestConn(t *testing.T) {
 	svr := initServerWithEmptyBroadcaster()
@@ -138,14 +153,8 @@ func TestGetEveryoneMessage(t *testing.T) {
 	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
-	_, _, err := conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-	_, everyone, err := conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
+	everyone, err := readMessagesAndKeepTheLastOne(conn2, 2)
+	expectF(t, err, nil)
 	expectF(t, string(everyone), twoUsersJSON)
 }
 
@@ -176,32 +185,20 @@ func TestUserJoinedMessage(t *testing.T) {
 	defer conn1.Close()
 
 	//Have the first connection read its ID and everyone messages
-	_, msg, err := conn1.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-	_, msg, err = conn1.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
+	_, err := readMessagesAndKeepTheLastOne(conn1, 2)
+	expectF(t, err, nil)
 
 	//Make the second connection
 	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
 	//Have the second connection read its ID and everyone messages
-	_, msg, err = conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-	_, msg, err = conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
+	_, err = readMessagesAndKeepTheLastOne(conn2, 2)
+	expectF(t, err, nil)
 
 	//Make sure the first user gets the message that the second user joined
 	secondUserJoinedJSON := `{"msgType":"User joined","data":"2"}`
-	_, msg, err = conn1.ReadMessage()
+	_, msg, err := conn1.ReadMessage()
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
@@ -227,30 +224,17 @@ func TestDisconnectBroadcast(t *testing.T) {
 	defer conn1.Close()
 
 	//Have the first connection read its ID and everyone messages
-	_, msg, err := conn1.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-
-	_, msg, err = conn1.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
+	_, err := readMessagesAndKeepTheLastOne(conn1, 2)
+	expectF(t, err, nil)
 
 	conn2 := makeWebSocketConn(t, svr)
 
 	//Have the second connection read its ID and everyone messages
-	_, msg, err = conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-	_, msg, err = conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
+	_, err = readMessagesAndKeepTheLastOne(conn2, 2)
+	expectF(t, err, nil)
 
 	//Read in the message on the first connection that the second user connected
-	_, msg, err = conn1.ReadMessage()
+	_, _, err = conn1.ReadMessage()
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
@@ -260,7 +244,7 @@ func TestDisconnectBroadcast(t *testing.T) {
 	//Read in the message on the first connection that the second user
 	//disconnected
 	secondUserDisconnectedJSON := `{"msgType":"User disconnected","data":"2"}`
-	_, msg, err = conn1.ReadMessage()
+	_, msg, err := conn1.ReadMessage()
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
@@ -279,29 +263,18 @@ func TestBroadcastCoords(t *testing.T) {
 	defer conn1.Close()
 
 	//Have the first connection read its ID and everyone messages
-	_, msg, err := conn1.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-
-	_, msg, err = conn1.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
+	_, err := readMessagesAndKeepTheLastOne(conn1, 2)
+	expectF(t, err, nil)
 
 	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
 	//Have the second connection read its ID and everyone messages
-	_, msg, err = conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-	_, msg, err = conn2.ReadMessage()
-	if err != nil {
-		t.Fatalf("Read message failed, %v", err)
-	}
-	_, msg, err = conn1.ReadMessage()
+	_, err = readMessagesAndKeepTheLastOne(conn2, 2)
+	expectF(t, err, nil)
+
+	//Have the first connection read the message that the second user joined
+	_, _, err = conn1.ReadMessage()
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
@@ -310,12 +283,13 @@ func TestBroadcastCoords(t *testing.T) {
 		`{"msgType":"Update coordinates","data":` +
 			`{"id":"1","lat":42.388282,"lng":-71.153968}}`
 
+	//Broadcast that the first user is at the Cambridge Fresh Pond
 	conn1.WriteMessage(ws.TextMessage,
 		[]byte(`{"id":"1","lat":42.388282,"lng":-71.153968}`))
 
 	//Make sure the first user's location is sent to the second user and not the
 	//first user.
-	_, msg, err = conn2.ReadMessage()
+	_, msg, err := conn2.ReadMessage()
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
