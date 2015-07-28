@@ -116,10 +116,10 @@ func (m *MapBroadcaster) ManageUsers() {
 				}
 
 				if _, ok := m.Users[coords.Id]; ok {
-					m.Users[coords.Id].updateCoords(coords.Lat, coords.Lng)
+					m.Users[coords.Id].UpdateCoords(coords.Lat, coords.Lng)
 					sendCoords, _ :=
 						MakeMsg("Update coordinates",
-							m.Users[coords.Id].getCoords())
+							m.Users[coords.Id].GetCoords())
 					m.broadcastToEveryoneBut(coords.Id, sendCoords)
 				}
 			case conn := <-m.join:

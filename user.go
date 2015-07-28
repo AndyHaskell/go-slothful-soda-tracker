@@ -99,16 +99,16 @@ func (user *User) receiveFromClient(b Broadcaster) {
 	}()
 }
 
-//updateCorods takes in a pair of latitude and longitude coordinates and sets
+//UpdateCoords takes in a pair of latitude and longitude coordinates and sets
 //the User's latitude and longitude coordinates to them
-func (user *User) updateCoords(lat, lng float64) {
+func (user *User) UpdateCoords(lat, lng float64) {
 	user.Lat = lat
 	user.Lng = lng
 }
 
-//getCoords creates a LatLngMsg struct containing a User's ID number and
+//GetCoords creates a LatLngMsg struct containing a User's ID number and
 //latitude and longitude coordinates.
-func (user *User) getCoords() LatLngMsg {
+func (user *User) GetCoords() LatLngMsg {
 	return LatLngMsg{
 		Id:  user.IdNumber,
 		Lat: user.Lat,
