@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"encoding/json"
+	"log"
 	"strconv"
 
 	ws "github.com/gorilla/websocket"
@@ -19,7 +19,7 @@ type LatLng struct {
 }
 
 type LatLngMsg struct {
-	Id string  `json:"id"`
+	Id  string  `json:"id"`
 	Lat float64 `json:"lat"`
 	Lng float64 `json:"lng"`
 }
@@ -60,7 +60,7 @@ func initUser(id string, conn *ws.Conn, m *MapBroadcaster) *User {
 	}
 	user.receiveFromBroadcaster(m)
 	user.receiveFromClient(m)
-	
+
 	return user
 }
 
@@ -95,8 +95,8 @@ func (user *User) receiveFromBroadcaster(b Broadcaster) {
 //from its client connection. If an error is encountered reading a message, such
 //as an EOF from the client disconnecting, the User disconnects from the
 //Broadcaster
-func (user *User) receiveFromClient(b Broadcaster){
-	go func(){
+func (user *User) receiveFromClient(b Broadcaster) {
+	go func() {
 		for {
 			_, msg, err := user.conn.ReadMessage()
 			if err != nil {
@@ -118,7 +118,7 @@ func (user *User) updateCoords(lat, lng float64) {
 
 func (user *User) getCoords() LatLngMsg {
 	return LatLngMsg{
-		Id: user.IdNumber,
+		Id:  user.IdNumber,
 		Lat: user.Lat,
 		Lng: user.Lng,
 	}
@@ -202,7 +202,7 @@ func (m *MapBroadcaster) ManageUsers() {
 				if _, ok := m.Users[coords.Id]; ok {
 					m.Users[coords.Id].updateCoords(coords.Lat, coords.Lng)
 					sendCoords, _ :=
-						MakeMsg("Update coordinates", 
+						MakeMsg("Update coordinates",
 							m.Users[coords.Id].getCoords())
 					m.BroadcastToEveryoneBut(coords.Id, sendCoords)
 				}

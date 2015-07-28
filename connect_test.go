@@ -14,11 +14,12 @@ var dialer = ws.Dialer{
 	WriteBufferSize: 1024,
 }
 
-type EmptyBroadcaster struct {}
-func (*EmptyBroadcaster) AddConn(c *ws.Conn){}
-func (*EmptyBroadcaster) ManageUsers(){}
-func (*EmptyBroadcaster) DisconnectConn(id string){}
-func (*EmptyBroadcaster) MsgFromConn(msg []byte){}
+type EmptyBroadcaster struct{}
+
+func (*EmptyBroadcaster) AddConn(c *ws.Conn)       {}
+func (*EmptyBroadcaster) ManageUsers()             {}
+func (*EmptyBroadcaster) DisconnectConn(id string) {}
+func (*EmptyBroadcaster) MsgFromConn(msg []byte)   {}
 
 //Construct the /ws WebSocket URL that connects to the WebSocket server.
 func getWebSocketURL(svr *httptest.Server) string {
@@ -29,7 +30,7 @@ func getWebSocketURL(svr *httptest.Server) string {
 //initServerWithEmptyBroadcaster initializes an httptest server with the routes
 //defined in initMux and an EmptyBroadcaster as the server's Broadcaster and
 //returns the server.
-func initServerWithEmptyBroadcaster() *httptest.Server{
+func initServerWithEmptyBroadcaster() *httptest.Server {
 	return httptest.NewServer(initMux(&EmptyBroadcaster{}))
 }
 
@@ -138,7 +139,7 @@ func TestGetEveryoneMessage(t *testing.T) {
 		t.Fatalf("Read message failed, %v", err)
 	}
 	if string(everyone) != twoUsersJSON {
-		t.Fatalf("everyone: Expected %s, got %s", twoUsersJSON,  everyone)
+		t.Fatalf("everyone: Expected %s, got %s", twoUsersJSON, everyone)
 	}
 }
 
@@ -207,7 +208,7 @@ func TestUserJoinedMessage(t *testing.T) {
 
 	//Make sure the message that the second user joined isn't broadcasted to the
 	//first user.
-	conn2.SetReadDeadline(time.Now().Add(500*time.Millisecond))
+	conn2.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 	_, msg, err = conn2.ReadMessage()
 	if err == nil {
 		t.Fatalf("Expected error reading message, msg = %s", msg)
@@ -246,7 +247,7 @@ func TestDisconnectBroadcast(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
-	
+
 	//Read in the message on the first connection that the second user connected
 	_, msg, err = conn1.ReadMessage()
 	if err != nil {
@@ -254,7 +255,7 @@ func TestDisconnectBroadcast(t *testing.T) {
 	}
 
 	conn2.Close()
-	
+
 	//Read in the message on the first connection that the second user
 	//disconnected
 	secondUserDisconnectedJSON := `{"msgType":"User disconnected","data":"2"}`
@@ -270,14 +271,14 @@ func TestDisconnectBroadcast(t *testing.T) {
 //Makes sure when a user sends a JSON message containing their ID number and
 //coordinates that it is broadcasted to every user connected to the broadcaster
 //except the user that sent the message.
-func TestBroadcastCoords(t *testing.T){
+func TestBroadcastCoords(t *testing.T) {
 	svr, _ := initTestServer()
 	defer svr.Close()
 
 	//Make two connections
 	conn1 := makeWebSocketConn(t, svr)
 	defer conn1.Close()
-	
+
 	//Have the first connection read its ID and everyone messages
 	_, msg, err := conn1.ReadMessage()
 	if err != nil {
@@ -307,7 +308,7 @@ func TestBroadcastCoords(t *testing.T){
 	}
 
 	firstUserAtFreshPondJSON :=
-		`{"msgType":"Update coordinates","data":`+
+		`{"msgType":"Update coordinates","data":` +
 			`{"id":"1","lat":42.388282,"lng":-71.153968}}`
 
 	conn1.WriteMessage(ws.TextMessage,
@@ -324,7 +325,7 @@ func TestBroadcastCoords(t *testing.T){
 	}
 
 	//Make sure the first user's location wasn't broadcasted to the first user
-	conn1.SetReadDeadline(time.Now().Add(500*time.Millisecond))
+	conn1.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 	_, msg, err = conn1.ReadMessage()
 	if err == nil {
 		t.Fatalf("Expected error reading message, msg = %s", msg)
