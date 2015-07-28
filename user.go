@@ -60,35 +60,38 @@ func (user *User) receiveFromBroadcaster(b Broadcaster) {
 	}()
 }
 
+//latLngMsgFromClient received a message from the User's connection and converts
+//it from a []byte to a LatLngMsg struct. If any error is encountered along the
+//way an error is returned.
+func (user *User) latLngMsgFromClient() ([]byte, error) {
+	_, msg, err := user.conn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+
+	var coords LatLng
+	err = json.Unmarshal(msg, &coords)
+	if err != nil {
+		return nil, err
+	}
+
+	//Add the user's ID number to the JSON message
+	sendCoords := &LatLngMsg{
+		Id:  user.IdNumber,
+		Lat: coords.Lat,
+		Lng: coords.Lng,
+	}
+	return json.Marshal(sendCoords)
+}
+
 //receiveFromClient starts a goroutine for the User to listen for messages on
 //from its client connection. If an error is encountered reading a message, such
 //as an EOF from the client disconnecting, the User disconnects from the
 //Broadcaster
 func (user *User) receiveFromClient(b Broadcaster) {
 	go func() {
-		var coords LatLng
-
 		for {
-			_, msg, err := user.conn.ReadMessage()
-			if err != nil {
-				b.DisconnectConn(user.IdNumber)
-				return
-			}
-
-			err = json.Unmarshal(msg, &coords)
-			if err != nil {
-				b.DisconnectConn(user.IdNumber)
-				return
-			}
-
-			//Add the user's ID number to the JSON message before sending it to
-			//the Broadcaster
-			sendCoords := &LatLngMsg{
-				Id:  user.IdNumber,
-				Lat: coords.Lat,
-				Lng: coords.Lng,
-			}
-			msgToSend, err := json.Marshal(sendCoords)
+			msgToSend, err := user.latLngMsgFromClient()
 			if err != nil {
 				b.DisconnectConn(user.IdNumber)
 				return
