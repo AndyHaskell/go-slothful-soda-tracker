@@ -97,6 +97,7 @@ func TestConn(t *testing.T) {
 	svr := initServerWithEmptyBroadcaster()
 	defer svr.Close()
 
+	//Test that the connection is created successfully
 	conn := makeWebSocketConn(t, svr)
 	conn.Close()
 }
@@ -111,6 +112,7 @@ func TestTwoConns(t *testing.T) {
 	defer conn1.Close()
 
 	//Make sure first connection was added to broadcaster
+	time.Sleep(100 * time.Millisecond)
 	expectF(t, broadcaster.highestId, 1)
 
 	//Make the second connection
@@ -118,6 +120,7 @@ func TestTwoConns(t *testing.T) {
 	defer conn2.Close()
 
 	//Make sure second connection was added to broadcaster
+	time.Sleep(100 * time.Millisecond)
 	expectF(t, broadcaster.highestId, 2)
 }
 
