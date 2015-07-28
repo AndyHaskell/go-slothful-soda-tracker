@@ -81,18 +81,18 @@ func (m *MapBroadcaster) MsgFromConn(msg []byte) {
 	m.messages <- msg
 }
 
-//Broadcast takes in a message and sends it to the receiveMsgs channel of every
+//broadcast takes in a message and sends it to the receiveMsgs channel of every
 //user in the MapBroadcaster's Users map.
-func (m *MapBroadcaster) Broadcast(msg []byte) {
+func (m *MapBroadcaster) broadcast(msg []byte) {
 	for _, user := range m.Users {
 		user.msgFromBroadcaster(msg)
 	}
 }
 
-//BroadcastToEveryoneBut takes in a User's ID string and a message and sends the
+//broadcastToEveryoneBut takes in a User's ID string and a message and sends the
 //message to every user in the MapBroadcaster's Users map except the user with
 //the ID passed in.
-func (m *MapBroadcaster) BroadcastToEveryoneBut(id string, msg []byte) {
+func (m *MapBroadcaster) broadcastToEveryoneBut(id string, msg []byte) {
 	for currentId, user := range m.Users {
 		if currentId != id {
 			user.msgFromBroadcaster(msg)
@@ -120,7 +120,7 @@ func (m *MapBroadcaster) ManageUsers() {
 					sendCoords, _ :=
 						MakeMsg("Update coordinates",
 							m.Users[coords.Id].getCoords())
-					m.BroadcastToEveryoneBut(coords.Id, sendCoords)
+					m.broadcastToEveryoneBut(coords.Id, sendCoords)
 				}
 			case conn := <-m.join:
 				m.highestId++
@@ -134,12 +134,12 @@ func (m *MapBroadcaster) ManageUsers() {
 
 				user.msgFromBroadcaster(yourIdMsg)
 				user.msgFromBroadcaster(everyoneMsg)
-				m.BroadcastToEveryoneBut(idString, joinMsg)
+				m.broadcastToEveryoneBut(idString, joinMsg)
 			case id := <-m.disconnect:
 				if _, ok := m.Users[id]; ok {
 					m.Users[id].msgFromBroadcaster([]byte("close"))
 					disconnectMsg, _ := MakeMsg("User disconnected", id)
-					m.BroadcastToEveryoneBut(id, disconnectMsg)
+					m.broadcastToEveryoneBut(id, disconnectMsg)
 					delete(m.Users, id)
 				}
 			}
