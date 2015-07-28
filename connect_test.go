@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +21,21 @@ func (*EmptyBroadcaster) AddConn(c *ws.Conn)       {}
 func (*EmptyBroadcaster) ManageUsers()             {}
 func (*EmptyBroadcaster) DisconnectConn(id string) {}
 func (*EmptyBroadcaster) MsgFromConn(msg []byte)   {}
+
+//Variations on the test helpers used for testing Negroni
+//(github.com/codegangsta/negroni) that call Fatalf rather than Errorf when the
+//tests fail.
+func expectF(t *testing.T, a interface{}, b interface{}) {
+	if a != b {
+		t.Fatalf("Expected %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+	}
+}
+
+func refuteF(t *testing.T, a interface{}, b interface{}) {
+	if a == b {
+		t.Fatalf("Did not expect %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+	}
+}
 
 //Construct the /ws WebSocket URL that connects to the WebSocket server.
 func getWebSocketURL(svr *httptest.Server) string {
@@ -77,20 +93,14 @@ func TestTwoConns(t *testing.T) {
 	defer conn1.Close()
 
 	//Make sure first connection was added to broadcaster
-	if broadcaster.highestId != 1 {
-		t.Fatalf("broadcaster.highestId: Expected %d, got %d",
-			1, broadcaster.highestId)
-	}
+	expectF(t, broadcaster.highestId, 1)
 
 	//Make the second connection
 	conn2 := makeWebSocketConn(t, svr)
 	defer conn2.Close()
 
 	//Make sure second connection was added to broadcaster
-	if broadcaster.highestId != 2 {
-		t.Fatalf("broadcaster.highestId: Expected %d, got %d",
-			2, broadcaster.highestId)
-	}
+	expectF(t, broadcaster.highestId, 2)
 }
 
 //Makes sure when a user joins the server they get a message with their ID
@@ -109,9 +119,7 @@ func TestGetIdMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
-	if string(msg) != yourIdJSON {
-		t.Fatalf("msg: Expected %s, got %s", yourIdJSON, msg)
-	}
+	expectF(t, string(msg), yourIdJSON)
 }
 
 //Makes sure when a user joins they get a message with the ID numbers and
@@ -138,9 +146,7 @@ func TestGetEveryoneMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
-	if string(everyone) != twoUsersJSON {
-		t.Fatalf("everyone: Expected %s, got %s", twoUsersJSON, everyone)
-	}
+	expectF(t, string(everyone), twoUsersJSON)
 }
 
 //Makes sure when a user disconnects they are removed from the broadcaster's
@@ -156,10 +162,7 @@ func TestDisconnect(t *testing.T) {
 
 	//Make sure second connection was removed from broadcaster
 	time.Sleep(100)
-	if len(broadcaster.Users) != 1 {
-		t.Errorf("len(broadcaster.Users): Expected %d, got %d",
-			1, len(broadcaster.Users))
-	}
+	expectF(t, len(broadcaster.Users), 1)
 }
 
 //Makes sure when a user joins the server all users except the user that joined
@@ -202,9 +205,7 @@ func TestUserJoinedMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
-	if string(msg) != secondUserJoinedJSON {
-		t.Fatalf("msg: Expected %s, got %s", secondUserJoinedJSON, msg)
-	}
+	expectF(t, string(msg), secondUserJoinedJSON)
 
 	//Make sure the message that the second user joined isn't broadcasted to the
 	//first user.
@@ -263,9 +264,7 @@ func TestDisconnectBroadcast(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
-	if string(msg) != secondUserDisconnectedJSON {
-		t.Fatalf("msg: Expected %s, got %s", secondUserDisconnectedJSON, msg)
-	}
+	expectF(t, string(msg), secondUserDisconnectedJSON)
 }
 
 //Makes sure when a user sends a JSON message containing their ID number and
@@ -320,9 +319,7 @@ func TestBroadcastCoords(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read message failed, %v", err)
 	}
-	if string(msg) != string(firstUserAtFreshPondJSON) {
-		t.Fatalf("msg: Expected %s, got %s", firstUserAtFreshPondJSON, msg)
-	}
+	expectF(t, string(msg), string(firstUserAtFreshPondJSON))
 
 	//Make sure the first user's location wasn't broadcasted to the first user
 	conn1.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
