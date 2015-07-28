@@ -51,8 +51,7 @@ appData.ws.onmessage = function(ev){
       appData.yourID = appData.yourID == "" ? data : appData.yourID
       var pos = appData.yourPos
 	
-      appData.ws.send(JSON.stringify(
-        {id: appData.yourID, lat: pos.lat(), lng: pos.lng()}))
+      appData.ws.send(JSON.stringify({lat: pos.lat(), lng: pos.lng()}))
     }
     else if (msgType == "Everyone") {
       var you = appData.yourID

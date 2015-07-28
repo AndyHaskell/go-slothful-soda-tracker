@@ -97,6 +97,8 @@ func (user *User) receiveFromBroadcaster(b Broadcaster) {
 //Broadcaster
 func (user *User) receiveFromClient(b Broadcaster) {
 	go func() {
+		var coords LatLng
+
 		for {
 			_, msg, err := user.conn.ReadMessage()
 			if err != nil {
@@ -104,7 +106,26 @@ func (user *User) receiveFromClient(b Broadcaster) {
 				return
 			}
 
-			b.MsgFromConn(msg)
+			err = json.Unmarshal(msg, &coords)
+			if err != nil {
+				b.DisconnectConn(user.IdNumber)
+				return
+			}
+
+			//Add the user's ID number to the JSON message before sending it to
+			//the Broadcaster
+			sendCoords := &LatLngMsg{
+				Id:  user.IdNumber,
+				Lat: coords.Lat,
+				Lng: coords.Lng,
+			}
+			msgToSend, err := json.Marshal(sendCoords)
+			if err != nil {
+				b.DisconnectConn(user.IdNumber)
+				return
+			}
+
+			b.MsgFromConn(msgToSend)
 		}
 	}()
 }
