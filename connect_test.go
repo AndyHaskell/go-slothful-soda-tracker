@@ -176,7 +176,7 @@ func TestDisconnect(t *testing.T) {
 	conn2.Close()
 
 	//Make sure second connection was removed from broadcaster
-	time.Sleep(100)
+	time.Sleep(100 * time.Millisecond)
 	expectF(t, len(broadcaster.Users), 1)
 }
 
